@@ -1,0 +1,47 @@
+#ifdef VERTEX
+attribute vec4 a_position;
+attribute vec2 a_uv;
+attribute vec3 a_normal;
+
+uniform mat4 u_mvp;
+uniform mat4 u_object2world;
+uniform vec4 u_worldlightdir;
+uniform vec4 u_worldcampos;
+
+varying vec2 v_uv;
+varying vec2 v_uvr;
+varying vec2 v_uvd;
+
+void main()
+{
+	gl_Position = u_mvp * a_position;
+	v_uv = a_uv;
+	
+    vec3 worldNormal = normalize(u_object2world*vec4(a_normal,0.0)).xyz;
+	vec3 worldPos = (u_object2world * vec4(a_position)).xyz;
+	vec3 viewDir = normalize(u_worldcampos.xyz - worldPos);
+	v_uvr = reflect(-viewDir,worldNormal).xy*0.5 + vec2(0.5,0.5);
+	v_uvd = vec2(dot(u_worldlightdir.xyz,worldNormal)*0.5+0.5,0.0);
+}
+#endif
+
+
+#ifdef FRAGMENT
+uniform lowp float u_reflStrength;
+uniform lowp float u_emission;
+
+uniform sampler2D u_texColor;
+uniform sampler2D u_texRamp;
+uniform sampler2D u_texRefl;
+varying lowp vec2 v_uv;
+varying lowp vec2 v_uvd;
+varying lowp vec2 v_uvr;
+
+void main()
+{
+	lowp vec4 t = texture2D(u_texColor,v_uv);
+	lowp vec4 d = texture2D(u_texRamp,v_uvd);
+	lowp vec4 reflcol = texture2D(u_texRefl,v_uvr);
+	gl_FragColor = t*(d * 0.25 + 0.75) + vec4(0.12,0.25,0.55,1.0) * (0.25) + reflcol * u_reflStrength;
+}
+#endif
